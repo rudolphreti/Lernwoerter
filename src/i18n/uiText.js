@@ -1,0 +1,16 @@
+export const uiText = {
+  appTitle: 'Lernwörter',
+  answerLabel: 'Eingabe',
+  answerPlaceholder: 'Gehörtes Wort eingeben',
+  check: 'Prüfen',
+  listen: 'Anhören',
+  next: 'Weiter',
+  jsonLabel: 'JSON',
+  import: 'Importieren',
+  export: 'Exportieren',
+  correct: 'Richtig',
+  wrong: 'Falsch',
+  imported: 'Importiert',
+  exportReady: 'Export bereit',
+  noExpression: 'Keine Wörter',
+};
