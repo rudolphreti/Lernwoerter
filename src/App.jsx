@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { evaluateAnswer } from './domain/dictation.js';
-import { createExportJson, parseExpressionsJson } from './domain/expressions.js';
+import { createExportText, parseExpressionsText } from './domain/expressions.js';
 import { uiText } from './i18n/uiText.js';
 import { playResultSound } from './sound/feedbackSound.js';
 import { speakExpression } from './speech/speech.js';
@@ -11,7 +11,7 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [jsonText, setJsonText] = useState(() => createExportJson(loadExpressions()));
+  const [textList, setTextList] = useState(() => createExportText(loadExpressions()));
 
   const currentExpression = useMemo(() => expressions[currentIndex] ?? '', [currentIndex, expressions]);
 
@@ -20,7 +20,7 @@ export default function App() {
     setCurrentIndex(0);
     setAnswer('');
     saveExpressions(nextExpressions);
-    setJsonText(createExportJson(nextExpressions));
+    setTextList(createExportText(nextExpressions));
   }
 
   function handleListen() {
@@ -41,7 +41,7 @@ export default function App() {
   }
 
   function handleImport() {
-    const parsed = parseExpressionsJson(jsonText);
+    const parsed = parseExpressionsText(textList);
     if (!parsed.ok) {
       setFeedback(parsed.message);
       playResultSound(false);
@@ -54,7 +54,7 @@ export default function App() {
   }
 
   function handleExport() {
-    setJsonText(createExportJson(expressions));
+    setTextList(createExportText(expressions));
     setFeedback(uiText.exportReady);
   }
 
@@ -100,12 +100,12 @@ export default function App() {
 
       <section className="flex flex-col gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <label className="flex flex-col gap-2 text-sm text-neutral-300">
-          {uiText.jsonLabel}
+          {uiText.textListLabel}
           <textarea
-            aria-label={uiText.jsonLabel}
+            aria-label={uiText.textListLabel}
             className="min-h-40 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-3 font-mono text-sm text-neutral-50 outline-none focus:border-neutral-300"
-            onChange={(event) => setJsonText(event.target.value)}
-            value={jsonText}
+            onChange={(event) => setTextList(event.target.value)}
+            value={textList}
           />
         </label>
         <div className="grid grid-cols-2 gap-3">

@@ -5,7 +5,7 @@ export const uiText = {
   check: 'Prüfen',
   listen: 'Anhören',
   next: 'Weiter',
-  jsonLabel: 'JSON',
+  textListLabel: 'TXT-Liste',
   import: 'Importieren',
   export: 'Exportieren',
   correct: 'Richtig',

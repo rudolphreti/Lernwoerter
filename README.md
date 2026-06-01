@@ -8,15 +8,15 @@ Minimalna aplikacja do dyktand zbudowana w React, Vite i Tailwind.
 - Użytkownik wpisuje usłyszane wyrażenie i dostaje prostą informację zwrotną.
 - Krótki dźwięk oznacza poprawną lub błędną odpowiedź.
 - Wyrażenia są przechowywane jako wersjonowany JSON w `localStorage`.
-- JSON z wyrażeniami można importować i eksportować z poziomu UI.
+- Listę TXT z wyrażeniami można importować i eksportować z poziomu UI.
 
-## Format JSON
+## Format TXT importu i eksportu
 
-```json
-{
-  "version": 1,
-  "expressions": ["Guten Morgen", "Das ist ein Apfel"]
-}
+Każde wyrażenie powinno znajdować się w osobnej linii:
+
+```txt
+Guten Morgen
+Das ist ein Apfel
 ```
 
 ## Komendy
