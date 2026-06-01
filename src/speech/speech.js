@@ -1,4 +1,13 @@
-export function speakExpression(expression) {
+export function listSpeechVoices() {
+  const synth = globalThis.speechSynthesis;
+  if (!synth?.getVoices) {
+    return [];
+  }
+
+  return synth.getVoices();
+}
+
+export function speakExpression(expression, selectedVoiceURI = '') {
   const synth = globalThis.speechSynthesis;
   if (!synth || !expression) {
     return;
@@ -6,6 +15,8 @@ export function speakExpression(expression) {
 
   synth.cancel();
   const utterance = new SpeechSynthesisUtterance(expression);
-  utterance.lang = 'de-AT';
+  const selectedVoice = listSpeechVoices().find((voice) => voice.voiceURI === selectedVoiceURI);
+  utterance.lang = selectedVoice?.lang || 'de-AT';
+  utterance.voice = selectedVoice || null;
   synth.speak(utterance);
 }

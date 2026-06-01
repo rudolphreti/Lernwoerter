@@ -30,4 +30,18 @@ describe('App TXT import/export menu', () => {
   it('does not render a separate import/export panel below the trainer', () => {
     assert.doesNotMatch(appSource, /<section className="flex flex-col gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">\s*<input[\s\S]*?\{uiText\.import\}/);
   });
+
+  it('renders a speech synthesizer selector inside the hamburger menu', () => {
+    assert.match(appSource, /listSpeechVoices/);
+    assert.match(appSource, /selectedVoiceURI/);
+    assert.match(appSource, /uiText\.voiceLabel/);
+    assert.match(appSource, /<select[\s\S]*?value=\{selectedVoiceURI\}/);
+  });
+
+  it('speaks the next expression one second after a correct answer', () => {
+    assert.match(appSource, /setTimeout\(\(\) => \{/);
+    assert.match(appSource, /1000\)/);
+    assert.match(appSource, /speakExpression\(nextExpression, selectedVoiceURI\)/);
+  });
+
 });

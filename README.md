@@ -4,9 +4,9 @@ Minimalna aplikacja do dyktand zbudowana w React, Vite i Tailwind.
 
 ## Funkcje
 
-- Syntezator mowy odczytuje aktualne wyrażenie.
+- Syntezator mowy odczytuje aktualne wyrażenie, a głos można wybrać w menu.
 - Użytkownik wpisuje usłyszane wyrażenie i dostaje prostą informację zwrotną.
-- Krótki dźwięk oznacza poprawną lub błędną odpowiedź.
+- Krótki dźwięk oznacza poprawną lub błędną odpowiedź. Po poprawnej odpowiedzi aplikacja przechodzi do kolejnego wyrażenia i odczytuje je po sekundzie.
 - Wyrażenia są przechowywane jako wersjonowany JSON w `localStorage`.
 - Plik TXT z wyrażeniami można importować i eksportować z poziomu UI bez podglądu treści w aplikacji.
 

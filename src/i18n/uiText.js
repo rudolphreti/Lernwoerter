@@ -6,6 +6,8 @@ export const uiText = {
   listen: 'Anhören',
   next: 'Weiter',
   menu: 'Menü',
+  voiceLabel: 'Stimme',
+  defaultVoice: 'Standardstimme',
   importFileLabel: 'TXT-Datei',
   import: 'Importieren',
   export: 'Exportieren',

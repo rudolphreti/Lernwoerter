@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { evaluateAnswer } from './domain/dictation.js';
 import { createExportText, parseExpressionsText } from './domain/expressions.js';
 import { uiText } from './i18n/uiText.js';
 import { playResultSound } from './sound/feedbackSound.js';
-import { speakExpression } from './speech/speech.js';
+import { listSpeechVoices, speakExpression } from './speech/speech.js';
 import { loadExpressions, saveExpressions } from './storage/expressionStorage.js';
+import { loadSelectedVoiceURI, saveSelectedVoiceURI } from './storage/speechSettingsStorage.js';
 
 export default function App() {
   const [expressions, setExpressions] = useState(() => loadExpressions());
@@ -12,11 +13,41 @@ export default function App() {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [voices, setVoices] = useState(() => listSpeechVoices());
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState(() => loadSelectedVoiceURI());
   const fileInputRef = useRef(null);
+  const nextSpeechTimeoutRef = useRef(null);
 
   const currentExpression = useMemo(() => expressions[currentIndex] ?? '', [currentIndex, expressions]);
 
+  useEffect(() => {
+    const synth = globalThis.speechSynthesis;
+    if (!synth) {
+      return undefined;
+    }
+
+    function refreshVoices() {
+      setVoices(listSpeechVoices());
+    }
+
+    refreshVoices();
+    synth.addEventListener?.('voiceschanged', refreshVoices);
+    return () => synth.removeEventListener?.('voiceschanged', refreshVoices);
+  }, []);
+
+  useEffect(() => {
+    return () => clearPendingNextSpeech();
+  }, []);
+
+  function clearPendingNextSpeech() {
+    if (nextSpeechTimeoutRef.current) {
+      clearTimeout(nextSpeechTimeoutRef.current);
+      nextSpeechTimeoutRef.current = null;
+    }
+  }
+
   function updateExpressions(nextExpressions) {
+    clearPendingNextSpeech();
     setExpressions(nextExpressions);
     setCurrentIndex(0);
     setAnswer('');
@@ -24,20 +55,42 @@ export default function App() {
   }
 
   function handleListen() {
-    speakExpression(currentExpression);
+    clearPendingNextSpeech();
+    speakExpression(currentExpression, selectedVoiceURI);
   }
 
   function handleCheck(event) {
     event.preventDefault();
+    clearPendingNextSpeech();
     const isCorrect = evaluateAnswer(answer, currentExpression);
     setFeedback(isCorrect ? uiText.correct : uiText.wrong);
     playResultSound(isCorrect);
+
+    if (!isCorrect || expressions.length === 0) {
+      return;
+    }
+
+    const nextIndex = (currentIndex + 1) % expressions.length;
+    const nextExpression = expressions[nextIndex] ?? '';
+    setCurrentIndex(nextIndex);
+    setAnswer('');
+    nextSpeechTimeoutRef.current = setTimeout(() => {
+      speakExpression(nextExpression, selectedVoiceURI);
+      nextSpeechTimeoutRef.current = null;
+    }, 1000);
   }
 
   function handleNext() {
+    clearPendingNextSpeech();
     setCurrentIndex((index) => (expressions.length === 0 ? 0 : (index + 1) % expressions.length));
     setAnswer('');
     setFeedback('');
+  }
+
+  function handleVoiceChange(event) {
+    const nextVoiceURI = event.target.value;
+    setSelectedVoiceURI(nextVoiceURI);
+    saveSelectedVoiceURI(nextVoiceURI);
   }
 
   function handleImport() {
@@ -111,7 +164,23 @@ export default function App() {
           ☰
         </button>
         {isMenuOpen && (
-          <div className="absolute right-0 top-12 z-10 flex min-w-44 flex-col gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-2">
+          <div className="absolute right-0 top-12 z-10 flex min-w-60 flex-col gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-2">
+            <label className="flex flex-col gap-2 px-2 py-1 text-sm text-neutral-300">
+              {uiText.voiceLabel}
+              <select
+                aria-label={uiText.voiceLabel}
+                className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-base text-neutral-50"
+                onChange={handleVoiceChange}
+                value={selectedVoiceURI}
+              >
+                <option value="">{uiText.defaultVoice}</option>
+                {voices.map((voice) => (
+                  <option key={voice.voiceURI} value={voice.voiceURI}>
+                    {voice.name} ({voice.lang})
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               aria-label={uiText.import}
               className="rounded-md bg-neutral-50 px-4 py-3 text-left font-medium text-neutral-950"
@@ -167,7 +236,6 @@ export default function App() {
           {feedback || (currentExpression ? '' : uiText.noExpression)}
         </p>
       </section>
-
     </main>
   );
 }
