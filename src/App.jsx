@@ -1,66 +1,205 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { evaluateAnswer } from './domain/dictation.js';
-import { createExportJson, parseExpressionsJson } from './domain/expressions.js';
+import { createExportText, parseExpressionsText } from './domain/expressions.js';
 import { uiText } from './i18n/uiText.js';
 import { playResultSound } from './sound/feedbackSound.js';
-import { speakExpression } from './speech/speech.js';
+import { listSpeechVoices, speakExpression } from './speech/speech.js';
 import { loadExpressions, saveExpressions } from './storage/expressionStorage.js';
+import { loadSelectedVoiceURI, saveSelectedVoiceURI } from './storage/speechSettingsStorage.js';
 
 export default function App() {
   const [expressions, setExpressions] = useState(() => loadExpressions());
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [jsonText, setJsonText] = useState(() => createExportJson(loadExpressions()));
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [voices, setVoices] = useState(() => listSpeechVoices());
+  const [selectedVoiceURI, setSelectedVoiceURI] = useState(() => loadSelectedVoiceURI());
+  const fileInputRef = useRef(null);
+  const nextSpeechTimeoutRef = useRef(null);
 
   const currentExpression = useMemo(() => expressions[currentIndex] ?? '', [currentIndex, expressions]);
 
+  useEffect(() => {
+    const synth = globalThis.speechSynthesis;
+    if (!synth) {
+      return undefined;
+    }
+
+    function refreshVoices() {
+      setVoices(listSpeechVoices());
+    }
+
+    refreshVoices();
+    synth.addEventListener?.('voiceschanged', refreshVoices);
+    return () => synth.removeEventListener?.('voiceschanged', refreshVoices);
+  }, []);
+
+  useEffect(() => {
+    return () => clearPendingNextSpeech();
+  }, []);
+
+  function clearPendingNextSpeech() {
+    if (nextSpeechTimeoutRef.current) {
+      clearTimeout(nextSpeechTimeoutRef.current);
+      nextSpeechTimeoutRef.current = null;
+    }
+  }
+
   function updateExpressions(nextExpressions) {
+    clearPendingNextSpeech();
     setExpressions(nextExpressions);
     setCurrentIndex(0);
     setAnswer('');
     saveExpressions(nextExpressions);
-    setJsonText(createExportJson(nextExpressions));
   }
 
   function handleListen() {
-    speakExpression(currentExpression);
+    clearPendingNextSpeech();
+    speakExpression(currentExpression, selectedVoiceURI);
   }
 
   function handleCheck(event) {
     event.preventDefault();
+    clearPendingNextSpeech();
     const isCorrect = evaluateAnswer(answer, currentExpression);
     setFeedback(isCorrect ? uiText.correct : uiText.wrong);
     playResultSound(isCorrect);
+
+    if (!isCorrect || expressions.length === 0) {
+      return;
+    }
+
+    const nextIndex = (currentIndex + 1) % expressions.length;
+    const nextExpression = expressions[nextIndex] ?? '';
+    setCurrentIndex(nextIndex);
+    setAnswer('');
+    nextSpeechTimeoutRef.current = setTimeout(() => {
+      speakExpression(nextExpression, selectedVoiceURI);
+      nextSpeechTimeoutRef.current = null;
+    }, 1000);
   }
 
   function handleNext() {
+    clearPendingNextSpeech();
     setCurrentIndex((index) => (expressions.length === 0 ? 0 : (index + 1) % expressions.length));
     setAnswer('');
     setFeedback('');
   }
 
+  function handleVoiceChange(event) {
+    const nextVoiceURI = event.target.value;
+    setSelectedVoiceURI(nextVoiceURI);
+    saveSelectedVoiceURI(nextVoiceURI);
+  }
+
   function handleImport() {
-    const parsed = parseExpressionsJson(jsonText);
+    setIsMenuOpen(false);
+    fileInputRef.current?.click();
+  }
+
+  async function handleImportFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    let fileText;
+    try {
+      fileText = await file.text();
+    } catch {
+      setFeedback(uiText.importReadError);
+      playResultSound(false);
+      event.target.value = '';
+      return;
+    }
+
+    const parsed = parseExpressionsText(fileText);
     if (!parsed.ok) {
       setFeedback(parsed.message);
       playResultSound(false);
+      event.target.value = '';
       return;
     }
 
     updateExpressions(parsed.value);
+    setIsMenuOpen(false);
     setFeedback(uiText.imported);
     playResultSound(true);
+    event.target.value = '';
   }
 
   function handleExport() {
-    setJsonText(createExportJson(expressions));
+    const exportFile = new Blob([createExportText(expressions)], { type: 'text/plain;charset=utf-8' });
+    const exportUrl = URL.createObjectURL(exportFile);
+    const link = document.createElement('a');
+
+    link.href = exportUrl;
+    link.download = 'lernwoerter.txt';
+    link.click();
+    URL.revokeObjectURL(exportUrl);
+    setIsMenuOpen(false);
     setFeedback(uiText.exportReady);
   }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col gap-4 px-4 py-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{uiText.appTitle}</h1>
+      <div className="relative flex items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">{uiText.appTitle}</h1>
+        <input
+          accept=".txt,text/plain"
+          aria-label={uiText.importFileLabel}
+          className="sr-only"
+          onChange={handleImportFile}
+          ref={fileInputRef}
+          type="file"
+        />
+        <button
+          aria-expanded={isMenuOpen}
+          aria-label={uiText.menu}
+          className="rounded-md border border-neutral-700 px-3 py-2 text-2xl leading-none"
+          onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+          type="button"
+        >
+          ☰
+        </button>
+        {isMenuOpen && (
+          <div className="absolute right-0 top-12 z-10 flex min-w-60 flex-col gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-2">
+            <label className="flex flex-col gap-2 px-2 py-1 text-sm text-neutral-300">
+              {uiText.voiceLabel}
+              <select
+                aria-label={uiText.voiceLabel}
+                className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-base text-neutral-50"
+                onChange={handleVoiceChange}
+                value={selectedVoiceURI}
+              >
+                <option value="">{uiText.defaultVoice}</option>
+                {voices.map((voice) => (
+                  <option key={voice.voiceURI} value={voice.voiceURI}>
+                    {voice.name} ({voice.lang})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              aria-label={uiText.import}
+              className="rounded-md bg-neutral-50 px-4 py-3 text-left font-medium text-neutral-950"
+              onClick={handleImport}
+              type="button"
+            >
+              ⇩ {uiText.import}
+            </button>
+            <button
+              aria-label={uiText.export}
+              className="rounded-md border border-neutral-700 px-4 py-3 text-left font-medium"
+              onClick={handleExport}
+              type="button"
+            >
+              ⇧ {uiText.export}
+            </button>
+          </div>
+        )}
+      </div>
 
       <section className="flex flex-col gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <button
@@ -96,26 +235,6 @@ export default function App() {
         <p aria-live="polite" className="min-h-7 text-lg font-semibold">
           {feedback || (currentExpression ? '' : uiText.noExpression)}
         </p>
-      </section>
-
-      <section className="flex flex-col gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <label className="flex flex-col gap-2 text-sm text-neutral-300">
-          {uiText.jsonLabel}
-          <textarea
-            aria-label={uiText.jsonLabel}
-            className="min-h-40 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-3 font-mono text-sm text-neutral-50 outline-none focus:border-neutral-300"
-            onChange={(event) => setJsonText(event.target.value)}
-            value={jsonText}
-          />
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          <button className="rounded-md bg-neutral-50 px-4 py-3 font-medium text-neutral-950" onClick={handleImport} type="button">
-            {uiText.import}
-          </button>
-          <button className="rounded-md border border-neutral-700 px-4 py-3 font-medium" onClick={handleExport} type="button">
-            {uiText.export}
-          </button>
-        </div>
       </section>
     </main>
   );

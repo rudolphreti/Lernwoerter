@@ -1,23 +1,23 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { createExportJson, parseExpressionsJson } from './expressions.js';
+import { createExportText, parseExpressionsText } from './expressions.js';
 
-describe('expression JSON format', () => {
-  it('parses a versioned expression document', () => {
-    assert.deepEqual(parseExpressionsJson('{"version":1,"expressions":["Haus", "  Baum  ", ""]}'), {
+describe('expression TXT format', () => {
+  it('parses one expression per line', () => {
+    assert.deepEqual(parseExpressionsText('Haus\n  Baum  \n\nGuten Morgen'), {
       ok: true,
-      value: ['Haus', 'Baum'],
+      value: ['Haus', 'Baum', 'Guten Morgen'],
     });
   });
 
-  it('rejects invalid JSON documents', () => {
-    assert.deepEqual(parseExpressionsJson('{"version":1,"expressions":[1]}'), {
+  it('rejects empty TXT lists', () => {
+    assert.deepEqual(parseExpressionsText('  \n\t\n'), {
       ok: false,
-      message: 'Die JSON-Datei braucht eine Liste mit Texten.',
+      message: 'Die TXT-Liste braucht mindestens ein Wort.',
     });
   });
 
-  it('exports expressions as a versioned JSON document', () => {
-    assert.equal(createExportJson(['Haus']), JSON.stringify({ version: 1, expressions: ['Haus'] }, null, 2));
+  it('exports expressions as one expression per line', () => {
+    assert.equal(createExportText(['Haus', '  Baum  ', '']), 'Haus\nBaum');
   });
 });
