@@ -11,6 +11,7 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const fileInputRef = useRef(null);
 
   const currentExpression = useMemo(() => expressions[currentIndex] ?? '', [currentIndex, expressions]);
@@ -40,6 +41,7 @@ export default function App() {
   }
 
   function handleImport() {
+    setIsMenuOpen(false);
     fileInputRef.current?.click();
   }
 
@@ -68,6 +70,7 @@ export default function App() {
     }
 
     updateExpressions(parsed.value);
+    setIsMenuOpen(false);
     setFeedback(uiText.imported);
     playResultSound(true);
     event.target.value = '';
@@ -82,12 +85,52 @@ export default function App() {
     link.download = 'lernwoerter.txt';
     link.click();
     URL.revokeObjectURL(exportUrl);
+    setIsMenuOpen(false);
     setFeedback(uiText.exportReady);
   }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col gap-4 px-4 py-6">
-      <h1 className="text-2xl font-semibold tracking-tight">{uiText.appTitle}</h1>
+      <div className="relative flex items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight">{uiText.appTitle}</h1>
+        <input
+          accept=".txt,text/plain"
+          aria-label={uiText.importFileLabel}
+          className="sr-only"
+          onChange={handleImportFile}
+          ref={fileInputRef}
+          type="file"
+        />
+        <button
+          aria-expanded={isMenuOpen}
+          aria-label={uiText.menu}
+          className="rounded-md border border-neutral-700 px-3 py-2 text-2xl leading-none"
+          onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
+          type="button"
+        >
+          ☰
+        </button>
+        {isMenuOpen && (
+          <div className="absolute right-0 top-12 z-10 flex min-w-44 flex-col gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-2">
+            <button
+              aria-label={uiText.import}
+              className="rounded-md bg-neutral-50 px-4 py-3 text-left font-medium text-neutral-950"
+              onClick={handleImport}
+              type="button"
+            >
+              ⇩ {uiText.import}
+            </button>
+            <button
+              aria-label={uiText.export}
+              className="rounded-md border border-neutral-700 px-4 py-3 text-left font-medium"
+              onClick={handleExport}
+              type="button"
+            >
+              ⇧ {uiText.export}
+            </button>
+          </div>
+        )}
+      </div>
 
       <section className="flex flex-col gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
         <button
@@ -125,24 +168,6 @@ export default function App() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <input
-          accept=".txt,text/plain"
-          aria-label={uiText.importFileLabel}
-          className="sr-only"
-          onChange={handleImportFile}
-          ref={fileInputRef}
-          type="file"
-        />
-        <div className="grid grid-cols-2 gap-3">
-          <button className="rounded-md bg-neutral-50 px-4 py-3 font-medium text-neutral-950" onClick={handleImport} type="button">
-            {uiText.import}
-          </button>
-          <button className="rounded-md border border-neutral-700 px-4 py-3 font-medium" onClick={handleExport} type="button">
-            {uiText.export}
-          </button>
-        </div>
-      </section>
     </main>
   );
 }

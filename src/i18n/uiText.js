@@ -5,6 +5,7 @@ export const uiText = {
   check: 'Prüfen',
   listen: 'Anhören',
   next: 'Weiter',
+  menu: 'Menü',
   importFileLabel: 'TXT-Datei',
   import: 'Importieren',
   export: 'Exportieren',
