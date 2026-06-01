@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { evaluateAnswer } from './domain/dictation.js';
 import { createExportText, parseExpressionsText } from './domain/expressions.js';
 import { uiText } from './i18n/uiText.js';
@@ -11,7 +11,7 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [textList, setTextList] = useState(() => createExportText(loadExpressions()));
+  const fileInputRef = useRef(null);
 
   const currentExpression = useMemo(() => expressions[currentIndex] ?? '', [currentIndex, expressions]);
 
@@ -20,7 +20,6 @@ export default function App() {
     setCurrentIndex(0);
     setAnswer('');
     saveExpressions(nextExpressions);
-    setTextList(createExportText(nextExpressions));
   }
 
   function handleListen() {
@@ -41,20 +40,48 @@ export default function App() {
   }
 
   function handleImport() {
-    const parsed = parseExpressionsText(textList);
+    fileInputRef.current?.click();
+  }
+
+  async function handleImportFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    let fileText;
+    try {
+      fileText = await file.text();
+    } catch {
+      setFeedback(uiText.importReadError);
+      playResultSound(false);
+      event.target.value = '';
+      return;
+    }
+
+    const parsed = parseExpressionsText(fileText);
     if (!parsed.ok) {
       setFeedback(parsed.message);
       playResultSound(false);
+      event.target.value = '';
       return;
     }
 
     updateExpressions(parsed.value);
     setFeedback(uiText.imported);
     playResultSound(true);
+    event.target.value = '';
   }
 
   function handleExport() {
-    setTextList(createExportText(expressions));
+    const exportFile = new Blob([createExportText(expressions)], { type: 'text/plain;charset=utf-8' });
+    const exportUrl = URL.createObjectURL(exportFile);
+    const link = document.createElement('a');
+
+    link.href = exportUrl;
+    link.download = 'lernwoerter.txt';
+    link.click();
+    URL.revokeObjectURL(exportUrl);
     setFeedback(uiText.exportReady);
   }
 
@@ -99,15 +126,14 @@ export default function App() {
       </section>
 
       <section className="flex flex-col gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <label className="flex flex-col gap-2 text-sm text-neutral-300">
-          {uiText.textListLabel}
-          <textarea
-            aria-label={uiText.textListLabel}
-            className="min-h-40 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-3 font-mono text-sm text-neutral-50 outline-none focus:border-neutral-300"
-            onChange={(event) => setTextList(event.target.value)}
-            value={textList}
-          />
-        </label>
+        <input
+          accept=".txt,text/plain"
+          aria-label={uiText.importFileLabel}
+          className="sr-only"
+          onChange={handleImportFile}
+          ref={fileInputRef}
+          type="file"
+        />
         <div className="grid grid-cols-2 gap-3">
           <button className="rounded-md bg-neutral-50 px-4 py-3 font-medium text-neutral-950" onClick={handleImport} type="button">
             {uiText.import}
