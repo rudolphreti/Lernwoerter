@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { evaluateAnswer } from './domain/dictation.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { evaluateAnswer, getNextExpressionIndex } from './domain/dictation.js';
 import { createExportText, parseExpressionsText } from './domain/expressions.js';
 import { uiText } from './i18n/uiText.js';
 import { playResultSound } from './sound/feedbackSound.js';
@@ -7,6 +7,7 @@ import { speakExpression } from './speech/speech.js';
 import { loadExpressions, saveExpressions } from './storage/expressionStorage.js';
 
 const exportFileName = 'lernwoerter.txt';
+const feedbackSpeechDelayMs = 700;
 
 export default function App() {
   const [expressions, setExpressions] = useState(() => loadExpressions());
@@ -14,10 +15,26 @@ export default function App() {
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const feedbackSpeechTimeoutRef = useRef(null);
 
   const currentExpression = useMemo(() => expressions[currentIndex] ?? '', [currentIndex, expressions]);
 
+  function clearPendingFeedbackSpeech() {
+    if (feedbackSpeechTimeoutRef.current) {
+      clearTimeout(feedbackSpeechTimeoutRef.current);
+      feedbackSpeechTimeoutRef.current = null;
+    }
+  }
+
+  function scheduleSpeechAfterFeedback(callback) {
+    clearPendingFeedbackSpeech();
+    feedbackSpeechTimeoutRef.current = setTimeout(callback, feedbackSpeechDelayMs);
+  }
+
+  useEffect(() => () => clearPendingFeedbackSpeech(), []);
+
   function updateExpressions(nextExpressions) {
+    clearPendingFeedbackSpeech();
     setExpressions(nextExpressions);
     setCurrentIndex(0);
     setAnswer('');
@@ -25,7 +42,16 @@ export default function App() {
   }
 
   function handleListen() {
+    clearPendingFeedbackSpeech();
     speakExpression(currentExpression);
+  }
+
+  function playNextExpression() {
+    const nextIndex = getNextExpressionIndex(currentIndex, expressions);
+    setCurrentIndex(nextIndex);
+    setAnswer('');
+    feedbackSpeechTimeoutRef.current = null;
+    speakExpression(expressions[nextIndex] ?? '');
   }
 
   function handleCheck(event) {
@@ -33,15 +59,53 @@ export default function App() {
     const isCorrect = evaluateAnswer(answer, currentExpression);
     setFeedback(isCorrect ? uiText.correct : uiText.wrong);
     playResultSound(isCorrect);
+
+    if (isCorrect) {
+      scheduleSpeechAfterFeedback(playNextExpression);
+      return;
+    }
+
+    scheduleSpeechAfterFeedback(() => speakExpression(currentExpression));
   }
 
   function handleNext() {
-    setCurrentIndex((index) => (expressions.length === 0 ? 0 : (index + 1) % expressions.length));
+    clearPendingFeedbackSpeech();
+    const nextIndex = getNextExpressionIndex(currentIndex, expressions);
+    setCurrentIndex(nextIndex);
     setAnswer('');
     setFeedback('');
   }
 
+  function handleKeyboardShortcut(event) {
+    if (event.key === 'Escape') {
+      setIsMenuOpen(false);
+      return;
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      handleNext();
+      return;
+    }
+
+    if (!event.ctrlKey) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+    if (key === 'l') {
+      event.preventDefault();
+      handleListen();
+    }
+
+    if (key === 'm') {
+      event.preventDefault();
+      setIsMenuOpen((isOpen) => !isOpen);
+    }
+  }
+
   async function handleImportFile(event) {
+    clearPendingFeedbackSpeech();
     const [file] = event.target.files ?? [];
     if (!file) {
       return;
@@ -63,6 +127,7 @@ export default function App() {
   }
 
   function handleExportFile() {
+    clearPendingFeedbackSpeech();
     const blob = new Blob([createExportText(expressions)], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -75,36 +140,44 @@ export default function App() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-xl flex-col gap-4 px-4 py-6">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">{uiText.appTitle}</h1>
+    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col gap-5 bg-amber-50 px-4 py-6 text-slate-950" onKeyDown={handleKeyboardShortcut}>
+      <header className="flex items-center justify-between gap-3 rounded-2xl bg-sky-200 px-4 py-3">
+        <h1 className="text-3xl font-bold tracking-tight text-sky-950">{uiText.appTitle}</h1>
         <div className="relative">
           <button
             aria-expanded={isMenuOpen}
             aria-label={uiText.menu}
-            className="rounded-md border border-neutral-700 px-3 py-2 font-medium"
+            className="rounded-xl border-2 border-sky-700 bg-white px-4 py-3 text-xl font-bold text-sky-950"
             onClick={() => setIsMenuOpen((isOpen) => !isOpen)}
             type="button"
           >
             ☰
           </button>
           {isMenuOpen ? (
-            <div className="absolute right-0 z-10 mt-2 flex w-48 flex-col gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-3">
-              <label className="cursor-pointer rounded-md bg-neutral-50 px-4 py-3 text-center font-medium text-neutral-950">
+            <div className="absolute right-0 z-10 mt-2 flex w-72 flex-col gap-3 rounded-2xl border-2 border-sky-200 bg-white p-4 text-slate-950">
+              <label className="cursor-pointer rounded-xl bg-emerald-200 px-4 py-3 text-center font-bold text-emerald-950">
                 {uiText.import}
                 <input accept=".txt,text/plain" className="sr-only" onChange={handleImportFile} type="file" />
               </label>
-              <button className="rounded-md border border-neutral-700 px-4 py-3 font-medium" onClick={handleExportFile} type="button">
+              <button className="rounded-xl border-2 border-sky-200 bg-sky-50 px-4 py-3 font-bold" onClick={handleExportFile} type="button">
                 {uiText.export}
               </button>
+              <section className="rounded-xl bg-amber-100 p-3">
+                <h2 className="mb-2 font-bold">{uiText.keyboardHelpTitle}</h2>
+                <ul className="flex flex-col gap-1 text-sm">
+                  {uiText.keyboardShortcuts.map((shortcut) => (
+                    <li key={shortcut}>{shortcut}</li>
+                  ))}
+                </ul>
+              </section>
             </div>
           ) : null}
         </div>
       </header>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <section className="flex flex-1 flex-col items-center justify-center gap-5 rounded-3xl border-4 border-sky-200 bg-white p-5">
         <button
-          className="rounded-md bg-neutral-50 px-4 py-3 font-medium text-neutral-950 disabled:opacity-50"
+          className="w-full rounded-2xl bg-violet-300 px-5 py-4 text-xl font-bold text-violet-950 disabled:opacity-50"
           disabled={!currentExpression}
           onClick={handleListen}
           type="button"
@@ -112,28 +185,28 @@ export default function App() {
           {uiText.listen}
         </button>
 
-        <form className="flex flex-col gap-3" onSubmit={handleCheck}>
-          <label className="flex flex-col gap-2 text-sm text-neutral-300">
+        <form className="flex w-full flex-col items-center gap-5" onSubmit={handleCheck}>
+          <label className="flex w-full flex-col items-center gap-3 text-center text-lg font-bold text-slate-700">
             {uiText.answerLabel}
             <input
               aria-label={uiText.answerLabel}
-              className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-3 text-base text-neutral-50 outline-none focus:border-neutral-300"
+              className="w-full max-w-lg rounded-3xl border-4 border-amber-300 bg-amber-50 px-5 py-5 text-center text-3xl font-bold text-slate-950 outline-none focus:border-sky-500"
               onChange={(event) => setAnswer(event.target.value)}
               placeholder={uiText.answerPlaceholder}
               value={answer}
             />
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button className="rounded-md bg-sky-500 px-4 py-3 font-medium text-neutral-950" type="submit">
+          <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+            <button className="rounded-2xl bg-emerald-300 px-5 py-4 text-xl font-bold text-emerald-950" type="submit">
               {uiText.check}
             </button>
-            <button className="rounded-md border border-neutral-700 px-4 py-3 font-medium" onClick={handleNext} type="button">
+            <button className="rounded-2xl border-2 border-sky-300 bg-sky-50 px-5 py-4 text-xl font-bold" onClick={handleNext} type="button">
               {uiText.next}
             </button>
           </div>
         </form>
 
-        <p aria-live="polite" className="min-h-7 text-lg font-semibold">
+        <p aria-live="polite" className="min-h-8 text-center text-2xl font-bold text-sky-950">
           {feedback || (currentExpression ? '' : uiText.noExpression)}
         </p>
       </section>
