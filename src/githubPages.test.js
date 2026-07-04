@@ -16,13 +16,12 @@ describe('GitHub Pages deployment', () => {
     assert.match(viteConfig, /base:\s*['"]\/Lernwoerter\/['"]/);
   });
 
-  it('deploys after a pull request is merged into main', () => {
+  it('deploys only from main pushes to avoid duplicate runs after a pull request merge', () => {
     const workflow = readProjectFile('.github/workflows/deploy-pages.yml');
 
-    assert.match(workflow, /pull_request:/);
-    assert.match(workflow, /branches:\s*\[main\]/);
-    assert.match(workflow, /types:\s*\[closed\]/);
-    assert.match(workflow, /if:\s*github\.event_name == ['"]push['"] \|\| github\.event\.pull_request\.merged == true/);
+    assert.match(workflow, /push:\n\s+branches:\s*\[main\]/);
+    assert.doesNotMatch(workflow, /pull_request:/);
+    assert.doesNotMatch(workflow, /github\.event\.pull_request\.merged/);
   });
 
   it('commits an npm lockfile required by npm ci and setup-node caching', () => {

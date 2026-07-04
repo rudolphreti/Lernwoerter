@@ -32,7 +32,7 @@ Zgodnie z regułami projektu `npm run dev` należy uruchamiać dopiero po zielon
 
 ## Deploy na GitHub Pages
 
-Deploy uruchamia GitHub Actions dopiero wtedy, gdy commit z workflow znajduje się na zdalnej gałęzi `main` na GitHubie. Sam lokalny merge nie wystarcza.
+Deploy uruchamia GitHub Actions tylko po pushu do zdalnej gałęzi `main` na GitHubie. Workflow nie reaguje na zamknięcie pull requesta, żeby po merge nie tworzyć drugiego równoległego uruchomienia dla gałęzi PR.
 
 Po zmergowaniu zmian do lokalnego `main` wypchnij je do GitHuba:
 
