@@ -38,7 +38,7 @@ describe('GitHub Pages deployment', () => {
     assert.match(workflow, /npm ci/);
     assert.match(workflow, /npm test/);
     assert.match(workflow, /npm run build/);
-    assert.match(workflow, /actions\/configure-pages@v5/);
+    assert.match(workflow, /actions\/configure-pages@v6/);
     assert.match(workflow, /actions\/checkout@v7/);
     assert.match(workflow, /actions\/setup-node@v6/);
     assert.match(workflow, /actions\/upload-pages-artifact@v5/);
