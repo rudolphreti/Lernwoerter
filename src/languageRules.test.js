@@ -14,9 +14,7 @@ describe('Language Rules', () => {
     const domainSource = readProjectFile('src/domain/expressions.js');
     const uiTextSource = readProjectFile('src/i18n/uiText.js');
 
-    assert.doesNotMatch(domainSource, /Das ist kein gültiges JSON\./);
-    assert.doesNotMatch(domainSource, /Die JSON-Datei braucht eine Liste mit Texten\./);
-    assert.match(uiTextSource, /invalidJson/);
+    assert.doesNotMatch(domainSource, /Die TXT-Datei braucht mindestens ein Wort oder einen Ausdruck pro Zeile\./);
     assert.match(uiTextSource, /invalidExpressions/);
   });
 

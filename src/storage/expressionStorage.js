@@ -1,6 +1,6 @@
-import { createExportJson, parseExpressionsJson } from '../domain/expressions.js';
+import { createExportText, parseExpressionsText } from '../domain/expressions.js';
 
-export const expressionStorageKey = 'lernwoerter.expressions';
+export const expressionStorageKey = 'lernwoerter.expressionsText';
 export const defaultExpressions = ['Guten Morgen', 'Das ist ein Apfel'];
 
 export function loadExpressions(storage = globalThis.localStorage) {
@@ -9,10 +9,10 @@ export function loadExpressions(storage = globalThis.localStorage) {
     return [...defaultExpressions];
   }
 
-  const parsed = parseExpressionsJson(storedValue);
+  const parsed = parseExpressionsText(storedValue);
   return parsed.ok ? parsed.value : [...defaultExpressions];
 }
 
 export function saveExpressions(expressions, storage = globalThis.localStorage) {
-  storage?.setItem(expressionStorageKey, createExportJson(expressions));
+  storage?.setItem(expressionStorageKey, createExportText(expressions));
 }

@@ -1,6 +1,4 @@
-export const EXPRESSION_DOCUMENT_VERSION = 1;
 export const expressionParseErrors = {
-  invalidJson: 'invalidJson',
   invalidExpressions: 'invalidExpressions',
 };
 
@@ -13,20 +11,12 @@ export function normalizeExpressions(expressions) {
   return normalized.length > 0 ? normalized : null;
 }
 
-export function parseExpressionsJson(jsonText) {
-  let parsed;
-
-  try {
-    parsed = JSON.parse(jsonText);
-  } catch {
-    return { ok: false, error: expressionParseErrors.invalidJson };
-  }
-
-  if (!parsed || parsed.version !== EXPRESSION_DOCUMENT_VERSION) {
+export function parseExpressionsText(text) {
+  if (typeof text !== 'string') {
     return { ok: false, error: expressionParseErrors.invalidExpressions };
   }
 
-  const normalized = normalizeExpressions(parsed.expressions);
+  const normalized = normalizeExpressions(text.split(/\r?\n/));
   if (!normalized) {
     return { ok: false, error: expressionParseErrors.invalidExpressions };
   }
@@ -34,7 +24,7 @@ export function parseExpressionsJson(jsonText) {
   return { ok: true, value: normalized };
 }
 
-export function createExportJson(expressions) {
+export function createExportText(expressions) {
   const normalized = normalizeExpressions(expressions) ?? [];
-  return JSON.stringify({ version: EXPRESSION_DOCUMENT_VERSION, expressions: normalized }, null, 2);
+  return normalized.length > 0 ? `${normalized.join('\n')}\n` : '';
 }

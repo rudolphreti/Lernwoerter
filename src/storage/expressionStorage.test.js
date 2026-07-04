@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
-import { loadExpressions, saveExpressions } from './expressionStorage.js';
+import { expressionStorageKey, loadExpressions, saveExpressions } from './expressionStorage.js';
 
 const store = new Map();
 globalThis.localStorage = {
@@ -16,14 +16,15 @@ describe('expression storage', () => {
     assert.deepEqual(loadExpressions(), ['Guten Morgen', 'Das ist ein Apfel']);
   });
 
-  it('saves and loads valid expressions', () => {
+  it('saves and loads expressions as plain text lines', () => {
     saveExpressions(['Wien', 'Österreich']);
 
+    assert.equal(localStorage.getItem(expressionStorageKey), 'Wien\nÖsterreich\n');
     assert.deepEqual(loadExpressions(), ['Wien', 'Österreich']);
   });
 
   it('falls back to defaults for invalid stored data', () => {
-    localStorage.setItem('lernwoerter.expressions', '{"version":1,"expressions":[7]}');
+    localStorage.setItem(expressionStorageKey, '  \n\n');
 
     assert.deepEqual(loadExpressions(), ['Guten Morgen', 'Das ist ein Apfel']);
   });
