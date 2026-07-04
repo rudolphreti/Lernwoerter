@@ -82,12 +82,6 @@ export default function App() {
       return;
     }
 
-    if (event.key === 'ArrowRight') {
-      event.preventDefault();
-      handleNext();
-      return;
-    }
-
     if (!event.ctrlKey) {
       return;
     }

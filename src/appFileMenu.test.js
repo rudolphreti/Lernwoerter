@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 const appSource = readFileSync(join(process.cwd(), 'src/App.jsx'), 'utf8');
+const uiTextSource = readFileSync(join(process.cwd(), 'src/i18n/uiText.js'), 'utf8');
 
 describe('file menu UI', () => {
   it('keeps import, export, and keyboard help controls in the hamburger menu', () => {
@@ -27,9 +28,13 @@ describe('file menu UI', () => {
 describe('keyboard-friendly child UI', () => {
   it('documents keyboard shortcuts and wires them to the app', () => {
     assert.match(appSource, /onKeyDown=\{handleKeyboardShortcut\}/);
-    assert.match(appSource, /ArrowRight/);
     assert.match(appSource, /ctrlKey/);
     assert.match(appSource, /Escape/);
+  });
+
+  it('does not use ArrowRight as a next shortcut so text input arrows keep working', () => {
+    assert.doesNotMatch(appSource, /event\.key === 'ArrowRight'/);
+    assert.doesNotMatch(uiTextSource, /Pfeil rechts: Weiter/);
   });
 
   it('centers the answer input and uses a large font', () => {

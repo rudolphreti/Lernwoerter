@@ -12,7 +12,6 @@ export const uiText = {
   keyboardShortcuts: [
     'Enter: Eingabe prüfen',
     'Strg + L: Wort anhören',
-    'Pfeil rechts: Weiter',
     'Strg + M: Menü öffnen oder schließen',
     'Esc: Menü schließen',
   ],
