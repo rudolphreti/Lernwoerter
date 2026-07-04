@@ -1,6 +1,8 @@
 export const EXPRESSION_DOCUMENT_VERSION = 1;
-export const invalidJsonMessage = 'Das ist kein gültiges JSON.';
-export const invalidExpressionsMessage = 'Die JSON-Datei braucht eine Liste mit Texten.';
+export const expressionParseErrors = {
+  invalidJson: 'invalidJson',
+  invalidExpressions: 'invalidExpressions',
+};
 
 export function normalizeExpressions(expressions) {
   if (!Array.isArray(expressions) || expressions.some((expression) => typeof expression !== 'string')) {
@@ -17,16 +19,16 @@ export function parseExpressionsJson(jsonText) {
   try {
     parsed = JSON.parse(jsonText);
   } catch {
-    return { ok: false, message: invalidJsonMessage };
+    return { ok: false, error: expressionParseErrors.invalidJson };
   }
 
   if (!parsed || parsed.version !== EXPRESSION_DOCUMENT_VERSION) {
-    return { ok: false, message: invalidExpressionsMessage };
+    return { ok: false, error: expressionParseErrors.invalidExpressions };
   }
 
   const normalized = normalizeExpressions(parsed.expressions);
   if (!normalized) {
-    return { ok: false, message: invalidExpressionsMessage };
+    return { ok: false, error: expressionParseErrors.invalidExpressions };
   }
 
   return { ok: true, value: normalized };

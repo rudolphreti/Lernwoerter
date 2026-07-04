@@ -13,4 +13,8 @@ export const uiText = {
   imported: 'Importiert',
   exportReady: 'Export bereit',
   noExpression: 'Keine Wörter',
+  errors: {
+    invalidJson: 'Das ist kein gültiges JSON.',
+    invalidExpressions: 'Die JSON-Datei braucht eine Liste mit Texten.',
+  },
 };
