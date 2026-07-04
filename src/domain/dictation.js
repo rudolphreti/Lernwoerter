@@ -13,6 +13,14 @@ export function getCurrentExpression(state) {
   return state.expressions[state.currentIndex] ?? state.expressions[0];
 }
 
+export function getNextExpressionIndex(currentIndex, expressions) {
+  if (expressions.length === 0) {
+    return 0;
+  }
+
+  return (currentIndex + 1) % expressions.length;
+}
+
 export function moveToNextExpression(state) {
   if (state.expressions.length === 0) {
     return createDictationState([]);
@@ -20,7 +28,7 @@ export function moveToNextExpression(state) {
 
   return {
     expressions: [...state.expressions],
-    currentIndex: (state.currentIndex + 1) % state.expressions.length,
+    currentIndex: getNextExpressionIndex(state.currentIndex, state.expressions),
   };
 }
 
