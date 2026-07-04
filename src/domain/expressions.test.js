@@ -13,7 +13,7 @@ describe('expression JSON format', () => {
   it('rejects invalid JSON documents', () => {
     assert.deepEqual(parseExpressionsJson('{"version":1,"expressions":[1]}'), {
       ok: false,
-      message: 'Die JSON-Datei braucht eine Liste mit Texten.',
+      error: 'invalidExpressions',
     });
   });
 

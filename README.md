@@ -29,3 +29,15 @@ npm run dev
 ```
 
 Zgodnie z regułami projektu `npm run dev` należy uruchamiać dopiero po zielonych testach.
+
+## Deploy na GitHub Pages
+
+Deploy uruchamia GitHub Actions dopiero wtedy, gdy commit z workflow znajduje się na zdalnej gałęzi `main` na GitHubie. Sam lokalny merge nie wystarcza.
+
+Po zmergowaniu zmian do lokalnego `main` wypchnij je do GitHuba:
+
+```bash
+git push origin main
+```
+
+Po tym pushu zakładka GitHub Actions powinna pokazać workflow `Deploy GitHub Pages`, który uruchamia testy, buduje aplikację i publikuje katalog `dist` na GitHub Pages.

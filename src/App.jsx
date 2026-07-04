@@ -43,7 +43,7 @@ export default function App() {
   function handleImport() {
     const parsed = parseExpressionsJson(jsonText);
     if (!parsed.ok) {
-      setFeedback(parsed.message);
+      setFeedback(uiText.errors[parsed.error]);
       playResultSound(false);
       return;
     }
