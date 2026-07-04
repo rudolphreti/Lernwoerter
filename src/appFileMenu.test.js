@@ -43,6 +43,18 @@ describe('keyboard-friendly child UI', () => {
     assert.match(appSource, /text-center/);
   });
 
+  it('moves the current expression to the queue back and speaks the new expression on Weiter', () => {
+    assert.match(appSource, /moveCurrentExpressionToBack/);
+    assert.match(appSource, /setExpressions\(nextState\.expressions\)/);
+    assert.match(appSource, /speakExpression\(getCurrentExpression\(nextState\)\)/);
+  });
+
+  it('runs Weiter from the Strg + W keyboard shortcut', () => {
+    assert.match(appSource, /key === 'w'/);
+    assert.match(appSource, /handleNext\(\)/);
+    assert.match(uiTextSource, /Strg \+ W: Weiter/);
+  });
+
   it('moves to and speaks the next expression after a correct answer', () => {
     assert.match(appSource, /const nextIndex = getNextExpressionIndex\(currentIndex, expressions\)/);
     assert.match(appSource, /speakExpression\(expressions\[nextIndex\]/);

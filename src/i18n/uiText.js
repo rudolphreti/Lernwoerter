@@ -13,6 +13,7 @@ export const uiText = {
     'Enter: Eingabe prüfen',
     'Strg + L: Wort anhören',
     'Strg + M: Menü öffnen oder schließen',
+    'Strg + W: Weiter',
     'Esc: Menü schließen',
   ],
   correct: 'Richtig',

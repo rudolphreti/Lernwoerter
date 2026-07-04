@@ -21,6 +21,22 @@ export function getNextExpressionIndex(currentIndex, expressions) {
   return (currentIndex + 1) % expressions.length;
 }
 
+export function moveCurrentExpressionToBack(state) {
+  if (state.expressions.length === 0) {
+    return createDictationState([]);
+  }
+
+  const currentIndex = state.currentIndex < state.expressions.length ? state.currentIndex : 0;
+  const nextExpressions = [...state.expressions];
+  const [currentExpression] = nextExpressions.splice(currentIndex, 1);
+  nextExpressions.push(currentExpression);
+
+  return {
+    expressions: nextExpressions,
+    currentIndex: currentIndex >= nextExpressions.length - 1 ? 0 : currentIndex,
+  };
+}
+
 export function moveToNextExpression(state) {
   if (state.expressions.length === 0) {
     return createDictationState([]);
