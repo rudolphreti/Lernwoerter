@@ -16,6 +16,15 @@ describe('GitHub Pages deployment', () => {
     assert.match(viteConfig, /base:\s*['"]\/Lernwoerter\/['"]/);
   });
 
+  it('deploys after a pull request is merged into main', () => {
+    const workflow = readProjectFile('.github/workflows/deploy-pages.yml');
+
+    assert.match(workflow, /pull_request:/);
+    assert.match(workflow, /branches:\s*\[main\]/);
+    assert.match(workflow, /types:\s*\[closed\]/);
+    assert.match(workflow, /if:\s*github\.event_name == ['"]push['"] \|\| github\.event\.pull_request\.merged == true/);
+  });
+
   it('has a GitHub Pages workflow that builds the static app', () => {
     const workflow = readProjectFile('.github/workflows/deploy-pages.yml');
 
