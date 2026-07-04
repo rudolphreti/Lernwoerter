@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { evaluateAnswer, getNextExpressionIndex } from './domain/dictation.js';
+import { evaluateAnswer, getCurrentExpression, getNextExpressionIndex, moveCurrentExpressionToBack } from './domain/dictation.js';
 import { createExportText, parseExpressionsText } from './domain/expressions.js';
 import { uiText } from './i18n/uiText.js';
 import { playResultSound } from './sound/feedbackSound.js';
@@ -70,10 +70,13 @@ export default function App() {
 
   function handleNext() {
     clearPendingFeedbackSpeech();
-    const nextIndex = getNextExpressionIndex(currentIndex, expressions);
-    setCurrentIndex(nextIndex);
+    const nextState = moveCurrentExpressionToBack({ expressions, currentIndex });
+    setExpressions(nextState.expressions);
+    setCurrentIndex(nextState.currentIndex);
     setAnswer('');
     setFeedback('');
+    saveExpressions(nextState.expressions);
+    speakExpression(getCurrentExpression(nextState));
   }
 
   function handleKeyboardShortcut(event) {
@@ -95,6 +98,11 @@ export default function App() {
     if (key === 'm') {
       event.preventDefault();
       setIsMenuOpen((isOpen) => !isOpen);
+    }
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      handleNext();
     }
   }
 

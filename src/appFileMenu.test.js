@@ -32,15 +32,27 @@ describe('keyboard-friendly child UI', () => {
     assert.match(appSource, /Escape/);
   });
 
-  it('does not use ArrowRight as a next shortcut so text input arrows keep working', () => {
-    assert.doesNotMatch(appSource, /event\.key === 'ArrowRight'/);
-    assert.doesNotMatch(uiTextSource, /Pfeil rechts: Weiter/);
+  it('does not use Strg + W as a shortcut because browsers reserve it', () => {
+    assert.doesNotMatch(appSource, /key === 'w'/);
+    assert.doesNotMatch(uiTextSource, /Strg \+ W: Weiter/);
   });
 
   it('centers the answer input and uses a large font', () => {
     assert.match(appSource, /items-center/);
     assert.match(appSource, /text-3xl/);
     assert.match(appSource, /text-center/);
+  });
+
+  it('moves the current expression to the queue back and speaks the new expression on Weiter', () => {
+    assert.match(appSource, /moveCurrentExpressionToBack/);
+    assert.match(appSource, /setExpressions\(nextState\.expressions\)/);
+    assert.match(appSource, /speakExpression\(getCurrentExpression\(nextState\)\)/);
+  });
+
+  it('runs Weiter from the Strg + ArrowRight keyboard shortcut with default browser handling prevented', () => {
+    assert.match(appSource, /key === 'ArrowRight'/);
+    assert.match(appSource, /event\.preventDefault\(\);\n\s+handleNext\(\)/);
+    assert.match(uiTextSource, /Strg \+ Pfeil rechts: Weiter/);
   });
 
   it('moves to and speaks the next expression after a correct answer', () => {
